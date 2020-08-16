@@ -25,6 +25,7 @@ impl fmt::Display for DegreeTooHigh {
     }
 }
 
+#[derive(Debug)]
 pub enum ParsingError {
 	FormatError(BadFormat),
 	DegreeError(DegreeTooHigh),
