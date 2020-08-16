@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["extract_polynom",""],["get_coefs",""],["main",""],["parse",""],["print_reduced_form",""],["resolve",""],["resolve_2nd_degree",""]],"mod":[["complex",""],["errors",""]],"struct":[["Polynom",""]]});
