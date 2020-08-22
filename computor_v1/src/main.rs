@@ -3,7 +3,9 @@ mod errors;
 
 use std::env;
 use std::fmt;
+use std::cmp;
 
+#[derive(Debug)]
 struct Polynom {
 	coef: f64,
 	exponent: u8,
@@ -11,37 +13,43 @@ struct Polynom {
 
 impl fmt::Display for Polynom {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} * X^{}", self.coef, self.exponent)
+		write!(f, "{} * X^{}", self.coef, self.exponent)
+	}
+}
+
+impl cmp::PartialEq for Polynom {
+    fn eq(&self, other: &Self) -> bool {
+        self.coef == other.coef && self.exponent == other.exponent
     }
 }
 
 fn extract_polynom(raw_input: &str, mut i: usize) 
 	-> Result<(Polynom, usize), errors::BadFormat> {
-	let sign = match raw_input.chars().nth(i).ok_or(errors::BadFormat)? {
-		'-' => {
-			i += 2;
-			-1.0
-		},
-		'+' => {
-			i += 2;
-			1.0
-		},
-		'=' => {
-			i += 2;
-			1.0
-		},
-		_ => 1.0,
-	};
-	let sep = i + raw_input
-		.get(i..).ok_or(errors::BadFormat)?
-		.find(' ').ok_or(errors::BadFormat)?;
-	let coef = sign * raw_input
-		.get(i..sep).ok_or(errors::BadFormat)?
-		.parse::<f64>().or(Err(errors::BadFormat))?;
-	let exponent = raw_input
-		.get(sep + 5..sep + 6).ok_or(errors::BadFormat)?
-		.parse::<u8>().or(Err(errors::BadFormat))?;
-	Ok((Polynom {coef: coef, exponent: exponent}, sep + 7))
+		let sign = match raw_input.chars().nth(i).ok_or(errors::BadFormat)? {
+			'-' => {
+				i += 2;
+				-1.0
+			},
+			'+' => {
+				i += 2;
+				1.0
+			},
+			'=' => {
+				i += 2;
+				1.0
+			},
+			_ => 1.0,
+		};
+		let sep = i + raw_input
+			.get(i..).ok_or(errors::BadFormat)?
+			.find(' ').ok_or(errors::BadFormat)?;
+		let coef = sign * raw_input
+			.get(i..sep).ok_or(errors::BadFormat)?
+			.parse::<f64>().or(Err(errors::BadFormat))?;
+		let exponent = raw_input
+			.get(sep + 5..sep + 6).ok_or(errors::BadFormat)?
+			.parse::<u8>().or(Err(errors::BadFormat))?;
+		Ok((Polynom {coef: coef, exponent: exponent}, sep + 7))
 }
 
 fn parse(raw_input: &str) -> Result<[Polynom; 3], errors::ParsingError> {
@@ -57,7 +65,7 @@ fn parse(raw_input: &str) -> Result<[Polynom; 3], errors::ParsingError> {
 			return Err(errors::ParsingError::DegreeError(
 					errors::DegreeTooHigh { degree: r.0.exponent }));
 		}
-		match raw_input[i..].find('=') {
+		match raw_input[i + 1..].find('=') {
 			Some(_) => ret[r.0.exponent as usize].coef += r.0.coef,
 			None => ret[r.0.exponent as usize].coef -= r.0.coef,
 		}
@@ -142,3 +150,66 @@ fn main() {
 	resolve(&polynoms);
 }
 
+#[cfg(test)]
+mod parse_tests {
+	#[test]
+	fn simple_degree_2() {
+		let polynoms = crate::parse("5 * X^0 + 4 * X^1 - 9.3 * X^2 = 1 * X^0")
+							.unwrap();
+		assert_eq!(polynoms[0], crate::Polynom {coef: 4.0, exponent: 0});
+		assert_eq!(polynoms[1], crate::Polynom {coef: 4.0, exponent: 1});
+		assert_eq!(polynoms[2], crate::Polynom {coef: -9.3, exponent: 2});
+	}
+
+	#[test]
+	fn simple_degree_1() {
+		let polynoms = crate::parse("5 * X^0 + 4 * X^1 = 4 * X^0").unwrap();
+		assert_eq!(polynoms[0], crate::Polynom {coef: 1.0, exponent: 0});
+		assert_eq!(polynoms[1], crate::Polynom {coef: 4.0, exponent: 1});
+		assert_eq!(polynoms[2], crate::Polynom {coef: 0.0, exponent: 2});
+	}
+
+	#[test]
+	#[should_panic]
+	fn degree_3() {
+		crate::parse("8 * X^0 - 6 * X^1 + 0 * X^2 - 5.6 * X^3 = 3 * X^0").unwrap();
+	}
+
+	#[test]
+	#[should_panic]
+	fn input_format_error() {
+		crate::parse("5 * X^0 + 4 * X^1 - 9.3 * X^2 = 1 *  X^0").unwrap();
+	}
+
+	#[test]
+	fn noisy_degree_1() {
+		let polynoms = crate::parse("5 * X^0 + 4 * X^1 + 0 * X^2 = 4 * X^0").unwrap();
+		assert_eq!(polynoms[0], crate::Polynom {coef: 1.0, exponent: 0});
+		assert_eq!(polynoms[1], crate::Polynom {coef: 4.0, exponent: 1});
+		assert_eq!(polynoms[2], crate::Polynom {coef: 0.0, exponent: 2});
+	}
+
+	#[test]
+	fn noisy_degree_2() {
+		let polynoms = crate::parse("5 * X^0 + 4 * X^1 - 5 * X^2 + 3 * X^2 = 4 * X^0").unwrap();
+		assert_eq!(polynoms[0], crate::Polynom {coef: 1.0, exponent: 0});
+		assert_eq!(polynoms[1], crate::Polynom {coef: 4.0, exponent: 1});
+		assert_eq!(polynoms[2], crate::Polynom {coef: -2.0, exponent: 2});
+	}
+
+	#[test]
+	fn shuffled_degree_2() {
+		let polynoms = crate::parse("4 * X^1 - 9.3 * X^2 + 5 * X^0 = 1 * X^0").unwrap();
+		assert_eq!(polynoms[0], crate::Polynom {coef: 4.0, exponent: 0});
+		assert_eq!(polynoms[1], crate::Polynom {coef: 4.0, exponent: 1});
+		assert_eq!(polynoms[2], crate::Polynom {coef: -9.3, exponent: 2});
+	}
+
+	#[test]
+	fn big_degree_2() {
+		let polynoms = crate::parse("5 * X^0 + 4 * X^1 - 9.3 * X^2 = -4.3 * X^0 + 40.1 * X^1 + 6.5 * X^2").unwrap();
+		assert_eq!(polynoms[0], crate::Polynom {coef: 9.3, exponent: 0});
+		assert_eq!(polynoms[1], crate::Polynom {coef: -36.1, exponent: 1});
+		assert_eq!(polynoms[2], crate::Polynom {coef: -15.8, exponent: 2});
+	}
+}

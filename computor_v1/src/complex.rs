@@ -1,5 +1,6 @@
 use std::fmt;
 
+#[derive(Debug)]
 pub struct Complex {
 	pub real_part: f64,
 	pub imaginary_part: f64,
