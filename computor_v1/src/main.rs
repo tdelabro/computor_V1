@@ -52,8 +52,8 @@ fn extract_polynom(raw_input: &str, mut i: usize)
 		Ok((Polynom {coef: coef, exponent: exponent}, sep + 7))
 }
 
-fn parse(raw_input: &str) -> Result<[Polynom; 3], errors::ParsingError> {
-	let mut ret = [
+fn parse(raw_input: &str) -> Result<Vec<Polynom>, errors::BadFormat> {
+	let mut ret = vec![
 		Polynom {coef: 0.0, exponent: 0},
 		Polynom {coef: 0.0, exponent: 1},
 		Polynom {coef: 0.0, exponent: 2},
@@ -61,26 +61,29 @@ fn parse(raw_input: &str) -> Result<[Polynom; 3], errors::ParsingError> {
 	let mut i = 0;
 	while i < raw_input.len() {
 		let r = extract_polynom(raw_input, i)?;
-		if r.0.exponent > 2 { 
-			return Err(errors::ParsingError::DegreeError(
-					errors::DegreeTooHigh { degree: r.0.exponent }));
-		}
+		let index = match ret.iter().position(|p| p.exponent == r.0.exponent) {
+			Some(i) => i,
+			None => {
+				ret.push(Polynom {coef: 0.0, exponent: r.0.exponent});
+				ret.len() - 1
+			}
+		};
 		match raw_input[i + 1..].find('=') {
-			Some(_) => ret[r.0.exponent as usize].coef += r.0.coef,
-			None => ret[r.0.exponent as usize].coef -= r.0.coef,
+			Some(_) => ret[index].coef += r.0.coef,
+			None => ret[index].coef -= r.0.coef,
 		}
 		i = r.1;
 	}
 	Ok(ret)
 }
 
-fn print_reduced_form(polynoms: &[Polynom; 3]) {
+fn print_reduced_form(polynoms: &Vec<Polynom>) {
 	print!("Reduced form: {}", polynoms[0]);
 	for polynom in polynoms[1..].iter() {
-		if polynom.coef > 0.0 {
-			print!(" + {}", polynom);
-		} else if polynom.coef < 0.0 {
+		if polynom.coef < 0.0 {
 			print!(" - {} * X^{}", -1.0 * polynom.coef, polynom.exponent);
+		} else {
+			print!(" + {}", polynom);
 		}
 	}
 	println!(" = 0");
@@ -108,7 +111,7 @@ fn resolve_2nd_degree(a: f64, b: f64, c: f64) {
 	}
 }
 
-fn resolve(polynoms: &[Polynom; 3]) {
+fn resolve(polynoms: &Vec<Polynom>) {
 	let degree = polynoms[match polynoms.iter().rposition(|p| p.coef != 0.0) {
 		Some(i) => i,
 		None => 0,
