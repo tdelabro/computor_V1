@@ -30,6 +30,9 @@ impl error::Error for TooManyArguments {}
 
 impl fmt::Display for TooManyArguments {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Too many arguments have been passed. Only one is allowed.")
+        write!(
+            f,
+            "Too many arguments have been passed. Only one is allowed."
+        )
     }
 }
