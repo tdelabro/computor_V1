@@ -242,9 +242,36 @@ mod parse_tests {
     }
 
     #[test]
-    #[should_panic]
     fn degree_3() {
-        crate::parse("8 * X^0 - 6 * X^1 + 0 * X^2 - 5.6 * X^3 = 3 * X^0").unwrap();
+        let polynoms = crate::parse("8 * X^0 - 6 * X^1 + 0 * X^2 - 5.6 * X^3 = 3 * X^0").unwrap();
+        assert_eq!(
+            polynoms[0],
+            crate::Polynom {
+                coef: 5.0,
+                exponent: 0
+            }
+        );
+        assert_eq!(
+            polynoms[1],
+            crate::Polynom {
+                coef: -6.0,
+                exponent: 1
+            }
+        );
+        assert_eq!(
+            polynoms[2],
+            crate::Polynom {
+                coef: 0.0,
+                exponent: 2
+            }
+        );
+        assert_eq!(
+            polynoms[3],
+            crate::Polynom {
+                coef: -5.6,
+                exponent: 3
+            }
+        );
     }
 
     #[test]
