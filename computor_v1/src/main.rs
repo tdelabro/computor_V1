@@ -107,11 +107,15 @@ fn parse(raw_input: &str) -> Result<Vec<Polynom>, errors::BadFormat> {
 }
 
 fn print_reduced_form(polynoms: &Vec<Polynom>) {
+	let last = match polynoms.iter().rposition(|p| p.coef != 0.0) {
+		Some(i) => i + 1,
+		None => 1,
+	};
     print!("Reduced form: {}", polynoms[0]);
-    for polynom in polynoms[1..].iter() {
+    for polynom in polynoms[1..last].iter() {
         if polynom.coef < 0.0 {
             print!(" - {} * X^{}", -1.0 * polynom.coef, polynom.exponent);
-        } else if polynom.coef > 0.0 {
+        } else {
             print!(" + {}", polynom);
         }
     }
