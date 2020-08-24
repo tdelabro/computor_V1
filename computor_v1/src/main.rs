@@ -24,20 +24,24 @@ impl cmp::PartialEq for Polynom {
 }
 
 fn extract_polynom(raw_input: &str, mut i: usize) -> Result<(Polynom, usize), errors::BadFormat> {
-    let sign = match raw_input.chars().nth(i).ok_or(errors::BadFormat)? {
-        '-' => {
-            i += 2;
-            -1.0
+    let sign = if i == 0 {
+        1.0
+    } else {
+        match raw_input.chars().nth(i).ok_or(errors::BadFormat)? {
+            '-' => {
+                i += 2;
+                -1.0
+            }
+            '+' => {
+                i += 2;
+                1.0
+            }
+            '=' => {
+                i += 2;
+                1.0
+            }
+            _ => 1.0,
         }
-        '+' => {
-            i += 2;
-            1.0
-        }
-        '=' => {
-            i += 2;
-            1.0
-        }
-        _ => 1.0,
     };
     let sep = i + raw_input
         .get(i..)
@@ -66,19 +70,19 @@ fn extract_polynom(raw_input: &str, mut i: usize) -> Result<(Polynom, usize), er
 
 fn parse(raw_input: &str) -> Result<Vec<Polynom>, errors::BadFormat> {
     let mut ret = vec![
-        Polynom {
-            coef: 0.0,
-            exponent: 0,
-        },
-        Polynom {
-            coef: 0.0,
-            exponent: 1,
-        },
-        Polynom {
-            coef: 0.0,
-            exponent: 2,
-        },
-    ];
+		Polynom {
+			coef: 0.0,
+			exponent: 0,
+		},
+		Polynom {
+			coef: 0.0,
+			exponent: 1,
+		},
+		Polynom {
+			coef: 0.0,
+			exponent: 2,
+		},
+	];
     let mut i = 0;
     while i < raw_input.len() {
         let r = extract_polynom(raw_input, i)?;
@@ -98,6 +102,7 @@ fn parse(raw_input: &str) -> Result<Vec<Polynom>, errors::BadFormat> {
         }
         i = r.1;
     }
+	ret.sort_unstable_by(|a, b| a.exponent.cmp(&b.exponent)); 
     Ok(ret)
 }
 
@@ -106,7 +111,7 @@ fn print_reduced_form(polynoms: &Vec<Polynom>) {
     for polynom in polynoms[1..].iter() {
         if polynom.coef < 0.0 {
             print!(" - {} * X^{}", -1.0 * polynom.coef, polynom.exponent);
-        } else {
+        } else if polynom.coef > 0.0 {
             print!(" + {}", polynom);
         }
     }
